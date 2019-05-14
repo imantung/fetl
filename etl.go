@@ -1,4 +1,4 @@
-package fileo
+package fetl
 
 import (
 	"bufio"
@@ -14,15 +14,21 @@ type FileETL struct {
 	Load      LoadFunc
 }
 
-type ExtractFunc func(text string) (extracted interface{}, err error)
+func (e *FileETL) SetExtractor(extractor Extractor) {
+	e.Extract = extractor.Extract
+}
 
-type TransformFunc func(extracted interface{}) (tranformed fmt.Stringer, err error)
+func (e *FileETL) SetTransformer(transformer Transformer) {
+	e.Transform = transformer.Transform
+}
 
-type LoadFunc func(tranformed fmt.Stringer) (err error)
+func (e *FileETL) SetLoader(loader Loader) {
+	e.Load = loader.Load
+}
 
 // Start reading
-func (r FileETL) Start() (err error) {
-	file, err := os.Open(r.Filename)
+func (e *FileETL) Start() (err error) {
+	file, err := os.Open(e.Filename)
 	if err != nil {
 		return
 	}
@@ -37,17 +43,17 @@ func (r FileETL) Start() (err error) {
 
 		text := scanner.Text()
 
-		extracted, err = r.Extract(text)
+		extracted, err = e.Extract(text)
 		if err != nil {
 			return
 		}
 
-		tranformed, err = r.Transform(extracted)
+		tranformed, err = e.Transform(extracted)
 		if err != nil {
 			return
 		}
 
-		err = r.Load(tranformed)
+		err = e.Load(tranformed)
 		if err != nil {
 			return
 		}
