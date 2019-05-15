@@ -2,11 +2,9 @@ package fetl
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 )
 
-// FileETL
 type FileETL struct {
 	Filename  string
 	Extract   ExtractFunc
@@ -14,17 +12,11 @@ type FileETL struct {
 	Load      LoadFunc
 }
 
-func (e *FileETL) SetExtractor(extractor Extractor) {
-	e.Extract = extractor.Extract
-}
+type TransformFunc func(extracted interface{}) (tranformed interface{}, err error)
 
-func (e *FileETL) SetTransformer(transformer Transformer) {
-	e.Transform = transformer.Transform
-}
+type LoadFunc func(tranformed interface{}) (err error)
 
-func (e *FileETL) SetLoader(loader Loader) {
-	e.Load = loader.Load
-}
+type ExtractFunc func(text string) (interface{}, error)
 
 // Start reading
 func (e *FileETL) Start() (err error) {
@@ -39,7 +31,7 @@ func (e *FileETL) Start() (err error) {
 	for scanner.Scan() {
 
 		var extracted interface{}
-		var tranformed fmt.Stringer
+		var tranformed interface{}
 
 		text := scanner.Text()
 
@@ -48,9 +40,13 @@ func (e *FileETL) Start() (err error) {
 			return
 		}
 
-		tranformed, err = e.Transform(extracted)
-		if err != nil {
-			return
+		if e.Transform != nil {
+			tranformed, err = e.Transform(extracted)
+			if err != nil {
+				return
+			}
+		} else {
+			tranformed = extracted
 		}
 
 		err = e.Load(tranformed)
